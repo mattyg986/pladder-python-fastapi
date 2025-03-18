@@ -5,10 +5,9 @@ celery_app = Celery(
     "purple_ladder_worker",
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
-    include=["app.agents.recruiter.tasks", 
-             "app.agents.processor.tasks",
-             "app.agents.matcher.tasks",
-             "app.agents.search.tasks"]
+    include=[
+        "app.agents.celery_tasks"  # Main module for Agent SDK-based tasks
+    ]
 )
 
 celery_app.conf.update(
@@ -17,6 +16,7 @@ celery_app.conf.update(
     worker_hijack_root_logger=False,
     worker_prefetch_multiplier=1,
     task_acks_late=True,
+    broker_connection_retry_on_startup=True,  # Fix for deprecation warning
 )
 
 if __name__ == "__main__":

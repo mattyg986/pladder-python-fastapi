@@ -62,18 +62,40 @@ class AgentService:
         self.db.commit()
         self.db.refresh(task)
         
-        # Queue task in Celery
-        agent = self.db.query(Agent).filter(Agent.id == agent_id).first()
-        if agent:
-            task_name = f"app.agents.{agent.type.value}.tasks.{task_data.action}"
+        # Map action to the appropriate unified task
+        task_mapping = {
+            "process_candidate": "app.agents.celery_tasks.process_candidate",
+            "search_candidates": "app.agents.celery_tasks.search_candidates",
+            # Add any other action mappings here
+        }
+        
+        # Get the task name from mapping or use the process_task fallback
+        if task_data.action in task_mapping:
+            task_name = task_mapping[task_data.action]
+            # Queue task in Celery
             if background_tasks:
                 background_tasks.add_task(self._run_task, task_name, task.id, task_data.parameters)
             else:
-                celery_task = celery_app.send_task(
+                celery_app.send_task(
                     task_name,
                     args=[task.id],
-                    kwargs=task_data.parameters,
-                    queue=agent.type.value,
+                    kwargs=task_data.parameters
+                )
+        else:
+            # Use the generic process_task for other actions
+            task_name = "app.agents.celery_tasks.process_task"
+            if background_tasks:
+                background_tasks.add_task(
+                    self._run_task, 
+                    task_name, 
+                    task.id, 
+                    {"action": task_data.action, **task_data.parameters}
+                )
+            else:
+                celery_app.send_task(
+                    task_name,
+                    args=[task.id, task_data.action],
+                    kwargs=task_data.parameters
                 )
         
         return task.id
@@ -114,7 +136,14 @@ class AgentService:
                 self.db.commit()
             
             # Run the task
-            result = celery_app.send_task(task_name, args=[task_id], kwargs=parameters)
+            if task_name == "app.agents.celery_tasks.process_task" and "action" in parameters:
+                # Handle process_task differently since it needs action as a positional argument
+                action = parameters.pop("action")
+                result = celery_app.send_task(task_name, args=[task_id, action], kwargs=parameters)
+            else:
+                # Standard task
+                result = celery_app.send_task(task_name, args=[task_id], kwargs=parameters)
+                
             task_result = result.get()  # This will wait for the task to complete
             
             # Update task with result

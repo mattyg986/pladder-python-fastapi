@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "sqlite:///./app.db"
     
+    # OpenAI Settings
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
