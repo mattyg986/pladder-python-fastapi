@@ -2,19 +2,17 @@ FROM node:18-alpine AS frontend-builder
 
 WORKDIR /app
 
-# Copy only what's needed for npm install
-COPY frontend/package*.json ./frontend/
-COPY frontend/.npmrc ./frontend/
+# Copy frontend directory with package files
+COPY frontend/package*.json ./
+COPY frontend/.npmrc ./
 
 # Install dependencies with production optimization
-WORKDIR /app/frontend
 ENV NODE_OPTIONS="--max-old-space-size=3072"
 RUN npm ci --only=production --no-audit --prefer-offline
 
-# Only copy what's needed for the build
+# Copy only what's needed for the build
 COPY frontend/public ./public
 COPY frontend/src ./src
-COPY frontend/tsconfig.json ./
 COPY frontend/*.js ./
 
 # Build with optimization
@@ -43,7 +41,7 @@ COPY app/ ./app/
 COPY main.py ./
 
 # Create static directory and copy frontend build
-COPY --from=frontend-builder /app/frontend/build ./app/static
+COPY --from=frontend-builder /app/build ./app/static
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
