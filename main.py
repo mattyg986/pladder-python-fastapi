@@ -1,7 +1,4 @@
-from fastapi import FastAPI
+from app.main import app
 
-app = FastAPI()
-
-@app.get("/")
-async def root():
-    return {"greeting": "Hello, World!", "message": "Welcome to FastAPI!"}
+# This file is used as an entry point for deployment platforms
+# The actual application is defined in app/main.py
