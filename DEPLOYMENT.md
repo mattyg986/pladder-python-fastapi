@@ -126,6 +126,30 @@ The application consists of:
    - Check Railway logs with `railway logs`
    - Make sure environment variables are set in Railway dashboard
 
+### Health Check Issues on Railway
+
+If the health check fails on Railway with "service unavailable" errors:
+
+1. **Check Railway Logs**
+   - Run `railway logs` to see application startup errors
+   - Look for exceptions, database connection issues, or out-of-memory errors
+
+2. **Verify PORT Environment Variable**
+   - Ensure your application is binding to the port provided by Railway via `$PORT`
+   - Use the startup script (`startup.sh`) which handles this correctly
+
+3. **Database Connection Issues**
+   - If your app relies on a database, ensure the connection string is correct
+   - Try making the database initialization fault-tolerant
+
+4. **Memory Constraints**
+   - Reduce the number of Gunicorn workers to 2 to avoid memory issues
+   - Set appropriate memory limits in railway.json
+
+5. **Check Health Endpoint**
+   - Verify `/health` endpoint returns a 200 status code quickly
+   - Make sure it doesn't depend on other services that might be unavailable
+
 ## Architecture
 
 This deployment uses a multi-stage Docker build:

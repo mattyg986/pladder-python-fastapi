@@ -1,5 +1,6 @@
 import logging
 import os
+import datetime
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -30,8 +31,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Import API routers
+# Import API routers - must be before the static file handlers
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+# Add specific API endpoints BEFORE mounting static files
+@app.get("/api/health")
+def health_check():
+    """Health check endpoint that returns JSON."""
+    # Simple health check that doesn't depend on database or other services
+    # This ensures the app can respond even if some services aren't ready yet
+    return {"status": "healthy", "timestamp": str(datetime.datetime.now())}
 
 # Check if we're in a production environment
 is_production = os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("PRODUCTION")
@@ -104,9 +113,14 @@ async def logo512():
     return JSONResponse({"detail": "Not found"}, status_code=404)
 
 # Serve static files for production React frontend and handle client-side routing
+# This catch-all route must be LAST, after all other routes are defined
 @app.get("/{catch_all:path}")
 async def serve_frontend(catch_all: str, request: Request):
     """Serve frontend for all other routes in production."""
+    # Skip API routes - they should be handled by their own handlers
+    if catch_all.startswith("api/"):
+        return JSONResponse({"detail": "API endpoint not found"}, status_code=404)
+        
     if not is_production or not static_dir.exists():
         return JSONResponse({"detail": "Not found"}, status_code=404)
     
@@ -125,9 +139,15 @@ async def serve_frontend(catch_all: str, request: Request):
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on application startup."""
-    # Initialize the database
-    init_db()
-    create_initial_data()
+    try:
+        # Initialize the database
+        logger.info("Initializing database...")
+        init_db()
+        create_initial_data()
+        logger.info("Database initialization complete.")
+    except Exception as e:
+        logger.error(f"Error initializing database: {str(e)}")
+        logger.warning("Continuing startup despite database error.")
     
     # Initialize Agents SDK
     try:
@@ -146,11 +166,7 @@ async def startup_event():
             logger.warning("OPENAI_API_KEY not set, Agents SDK may not work correctly")
     except Exception as e:
         logger.error(f"Error setting up Agents SDK: {str(e)}")
-
-@app.get("/health")
-def health_check():
-    """Health check endpoint."""
-    return {"status": "healthy"}
+        logger.warning("Continuing startup despite Agents SDK error.")
 
 if __name__ == "__main__":
     import uvicorn

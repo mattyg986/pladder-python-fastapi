@@ -27,8 +27,10 @@ WORKDIR /app
 
 # Install essential system packages
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends libffi-dev && \
-    apt-get clean && \
+    apt-get install -y --no-install-recommends \
+    libffi-dev \
+    curl \
+    && apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Install Python dependencies
@@ -41,11 +43,19 @@ RUN pip install --no-cache-dir -U pip setuptools wheel && \
 COPY app/ ./app/
 COPY main.py ./
 
+# Copy startup script
+COPY startup.sh ./
+RUN chmod +x startup.sh
+
 # Copy frontend build to static directory
 COPY --from=frontend-builder /app/build ./app/static
 
+# Ensure app/static directory has correct permissions
+RUN mkdir -p ./app/static && chmod -R 755 ./app/static
+
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
+ENV PORT=8000
 
 # Expose port
 EXPOSE 8000
@@ -54,4 +64,4 @@ EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 # For production with Gunicorn, override the CMD with:
-# CMD ["gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "app.main:app"] 
+# CMD ["./startup.sh"] 
