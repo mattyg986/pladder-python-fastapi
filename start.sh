@@ -65,6 +65,14 @@ FRONTEND_PID=$!
 cd ..
 echo -e "${GREEN}Frontend server started (PID: $FRONTEND_PID).${NC}"
 
+# Build the static files for local development (similar to production)
+echo -e "${YELLOW}Building static files for development...${NC}"
+cd frontend && npm run build
+mkdir -p ../app/static
+cp -r build/* ../app/static/
+cd ..
+echo -e "${GREEN}Static files built successfully.${NC}"
+
 # Summary
 echo -e "\n${GREEN}=== All Services Started (Development Mode) ===${NC}"
 echo -e "${GREEN}Redis:${NC} Running on port 6379"
