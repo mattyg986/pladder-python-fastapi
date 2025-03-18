@@ -1,9 +1,6 @@
-# This project is NOT using Docker - we're using Nixpacks instead
-# This file is just to prevent any accidental Docker builds
+# Docker ignore file - files and directories to exclude from Docker builds
 
-# Files and directories to ignore when building the Docker image
-
-# Development and VCS
+# Version control and IDE
 .git/
 .github/
 .gitignore
@@ -59,20 +56,11 @@ frontend/.npm/
 **/*.rar
 **/*.7z
 
-# Development/local files
+# Environment variables and secrets
 .env*
 !.env.example
-**/.env.local
-**/.env.development.local
-**/.env.test.local
-**/.env.production.local
 
-# Documentation and configuration files
-*.md
-!README.md
-.railwayignore
-
-# Scripts
+# Test files
 test_*.py
 tests/
 
@@ -84,11 +72,14 @@ logs/
 **/*.db
 **/*.sqlite3
 
-# Old configuration files
-nixpacks.toml
-.nixpacks.toml
-railway.toml
+# Documentation
+*.md
+!README.md
+!DEPLOYMENT.md
 
-# Keep necessary files
-!.env.docker
-!docker-compose.yml 
+# Deployment scripts and configurations 
+# (handled by Railway or Docker Compose)
+deploy.sh
+
+# Old configuration files
+# All removed in cleanup 

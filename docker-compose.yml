@@ -2,31 +2,41 @@ version: '3.8'
 
 services:
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - RAILWAY_ENVIRONMENT=production
+      - APP_ENV=${APP_ENV:-development}
+      - PRODUCTION=${PRODUCTION:-false}
       - PORT=8000
       - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///./app.db}
+    command: ${WEB_COMMAND:-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload}
     depends_on:
       - redis
     volumes:
-      - ./app:/app/app
+      # Mount app code for development hot reloading
+      - ${MOUNT_APP:-./app:/app/app}
   
   worker:
-    build: .
-    command: celery -A app.worker worker --loglevel=info
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: celery -A app.worker worker --loglevel=info --concurrency=${CELERY_CONCURRENCY:-2}
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - RAILWAY_ENVIRONMENT=production
+      - APP_ENV=${APP_ENV:-development}
+      - PRODUCTION=${PRODUCTION:-false}
       - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///./app.db}
     depends_on:
       - redis
-      - web
     volumes:
-      - ./app:/app/app
+      # Mount app code for development hot reloading
+      - ${MOUNT_APP:-./app:/app/app}
   
   redis:
     image: redis:alpine

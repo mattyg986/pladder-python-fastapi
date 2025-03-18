@@ -1,4 +1,4 @@
-# Railway ignore file - excludes files from snapshot
+# Railway ignore file - excludes files from Railway snapshot
 
 # Version control
 .git/
@@ -46,12 +46,7 @@ logs/
 **/*.db
 **/*.sqlite3
 
-# Old configuration files
-nixpacks.toml
-.nixpacks.toml
-railway.toml
-
-# Frontend build-only files
+# Ensure these files are included
 !frontend/package.json
 !frontend/package-lock.json
 !app/static/.gitkeep 
