@@ -130,6 +130,12 @@ The docker-compose.yml file defines:
 - Check if you have enough disk space
 - Verify that all required files are in the repository
 
+**Memory-Related Build Failures**
+- If you see errors like `exit code: 137` or npm install failures, your build is running out of memory
+- Use the provided `.env.docker` file to increase memory allocation
+- For local builds, ensure Docker has sufficient memory allocated in Docker Desktop preferences
+- For Railway, the `railway.json` file has been configured with memory optimizations
+
 **Application Doesn't Start**
 - Check Docker logs: `docker-compose logs`
 - Verify environment variables are properly set

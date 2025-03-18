@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build script for Docker deployment
+# Build script for Docker deployment with memory optimizations
 
 set -e  # Exit on any error
 
@@ -14,9 +14,23 @@ fi
 echo "Docker version: $(docker --version)"
 echo "Docker Compose version: $(docker-compose --version)"
 
-# Build the Docker image
-echo "==== Building Docker image ===="
-docker build -t pladder-python-fastapi .
+# Load environment variables if .env.docker exists
+if [ -f .env.docker ]; then
+    echo "Loading Docker environment variables from .env.docker"
+    export $(grep -v '^#' .env.docker | xargs)
+fi
+
+# Set default memory values if not already set
+DOCKER_MEMORY=${DOCKER_MEMORY:-"4g"}
+DOCKER_MEMORY_SWAP=${DOCKER_MEMORY_SWAP:-"6g"}
+
+# Build the Docker image with memory optimizations
+echo "==== Building Docker image with memory limits ($DOCKER_MEMORY) ===="
+docker build -t pladder-python-fastapi \
+    --memory=$DOCKER_MEMORY \
+    --memory-swap=$DOCKER_MEMORY_SWAP \
+    --build-arg BUILDKIT_INLINE_CACHE=1 \
+    .
 
 echo "==== Docker image built successfully! ===="
 
