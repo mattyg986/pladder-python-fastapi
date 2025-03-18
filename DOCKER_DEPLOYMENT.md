@@ -93,6 +93,50 @@ In your Railway project, add the following environment variables:
 2. Railway will automatically build and deploy the application
 3. Access the application at the URL provided by Railway
 
+## Optimizing Railway Deployments
+
+If your Railway deployments are slow or timing out during the snapshot phase, try the following optimizations:
+
+### Using the Specialized Railway Dockerfile
+
+The project includes a specialized Dockerfile for Railway deployments:
+
+```
+railway.Dockerfile
+```
+
+This Dockerfile is already referenced in the `railway.json` configuration and is optimized for faster builds on Railway.
+
+### Using the Railway Deployment Script
+
+For the fastest possible deployments, use the provided deployment script:
+
+```bash
+./deploy-railway.sh
+```
+
+This script will:
+1. Clean up unnecessary files (like node_modules and __pycache__)
+2. Handle Railway CLI login if needed
+3. Deploy to Railway with optimized settings
+
+### Manual Optimization Steps
+
+If you prefer to deploy manually:
+
+1. Remove large directories before deploying:
+   ```bash
+   rm -rf frontend/node_modules
+   find . -name "__pycache__" -type d -exec rm -rf {} +
+   ```
+
+2. Make sure `.railwayignore` is properly configured to exclude unnecessary files
+
+3. Deploy with Railway CLI:
+   ```bash
+   railway up
+   ```
+
 ## Dockerfile Explanation
 
 The Dockerfile uses a multi-stage build:
@@ -144,4 +188,11 @@ The docker-compose.yml file defines:
 **Railway Deployment Issues**
 - Check Railway logs in the dashboard
 - Verify environment variables are properly set
-- Check if the health check endpoint is working 
+- Check if the health check endpoint is working
+
+**Slow or Timeout Railway Deployments**
+- Use the specialized `railway.Dockerfile` instead of the regular Dockerfile
+- Use the `deploy-railway.sh` script for optimized deployments
+- Check your `.railwayignore` file to ensure large directories are excluded
+- Remove node_modules and other large directories before deploying
+- Consider splitting your app into smaller services if it's still too large 

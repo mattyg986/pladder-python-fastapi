@@ -3,11 +3,21 @@
 
 # Files and directories to ignore when building the Docker image
 
+# Development and VCS
+.git/
+.github/
+.gitignore
+.vscode/
+.idea/
+**/__pycache__/
+**/.pytest_cache/
+**/.coverage
+**/.DS_Store
+
 # Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
+**/*.py[cod]
+**/*$py.class
+**/*.so
 .Python
 env/
 venv/
@@ -23,9 +33,9 @@ lib64/
 parts/
 sdist/
 var/
-*.egg-info/
+**/*.egg-info/
 .installed.cfg
-*.egg
+**/*.egg
 
 # Node
 frontend/node_modules/
@@ -35,35 +45,50 @@ frontend/.pnp.js
 frontend/npm-debug.log*
 frontend/yarn-debug.log*
 frontend/yarn-error.log*
+frontend/build/stats.json
+frontend/build/asset-manifest.json
+frontend/.npm/
+
+# Large or unnecessary files
+**/*.mp4
+**/*.mov
+**/*.avi
+**/*.gz
+**/*.tar
+**/*.zip
+**/*.rar
+**/*.7z
 
 # Development/local files
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-.git/
-.github/
-.gitignore
-.vscode/
-.idea/
+.env*
+!.env.example
+**/.env.local
+**/.env.development.local
+**/.env.test.local
+**/.env.production.local
 
-# Documentation and configuration
+# Documentation and configuration files
 *.md
+!README.md
 .railwayignore
-start.sh
-stop.sh
+
+# Scripts
 test_*.py
+tests/
 
 # Log files
 logs/
-*.log
+**/*.log
 
 # Data files
-*.db
-*.sqlite3
+**/*.db
+**/*.sqlite3
 
 # Old configuration files
 nixpacks.toml
 .nixpacks.toml
-railway.toml 
+railway.toml
+
+# Keep necessary files
+!.env.docker
+!docker-compose.yml 

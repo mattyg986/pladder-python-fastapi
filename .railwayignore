@@ -1,14 +1,57 @@
-# Ignore large directories that Railway doesn't need
-venv/
-logs/
-__pycache__/
+# Railway ignore file - excludes files from snapshot
+
+# Version control
 .git/
+.github/
+
+# Python cache and environments
+**/__pycache__/
+**/.pytest_cache/
+**/.coverage
+venv/
+ENV/
+
+# Node.js
+frontend/node_modules/
+frontend/coverage/
+frontend/.pnp/
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# Development files
+.vscode/
+.idea/
+**/.DS_Store
+
+# Test files
+tests/
+test_*.py
+
+# Large or unnecessary files
+**/*.mp4
+**/*.mov
+**/*.avi
+**/*.gz
+**/*.tar
+**/*.zip
+**/*.rar
+**/*.7z
+
+# Log files
+logs/
+**/*.log
+
+# Data files
+**/*.db
+**/*.sqlite3
+
+# Old configuration files
+nixpacks.toml
+.nixpacks.toml
+railway.toml
 
 # Frontend build-only files
-frontend/node_modules/
-
-# Don't ignore these important files
-!build.sh
 !frontend/package.json
 !frontend/package-lock.json
 !app/static/.gitkeep 
