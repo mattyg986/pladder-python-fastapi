@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - RAILWAY_ENVIRONMENT=production
+      - PORT=8000
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+    volumes:
+      - ./app:/app/app
+  
+  worker:
+    build: .
+    command: celery -A app.worker worker --loglevel=info
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - RAILWAY_ENVIRONMENT=production
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+      - web
+    volumes:
+      - ./app:/app/app
+  
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+volumes:
+  redis-data: 

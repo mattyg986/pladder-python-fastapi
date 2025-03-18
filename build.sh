@@ -1,42 +1,32 @@
 #!/bin/bash
-# Enhanced build script for Railway
+# Build script for Docker deployment
 
 set -e  # Exit on any error
 
-echo "==== Build Process Started ===="
-echo "Environment: $RAILWAY_ENVIRONMENT"
-echo "Node version: $(node -v)"
-echo "NPM version: $(npm -v)"
-echo "Python version: $(python --version)"
+echo "==== Docker Build Process Started ===="
 
-echo "==== Installing Python dependencies ===="
-pip install -r requirements.txt
+# Check if Docker is installed
+if ! command -v docker &> /dev/null; then
+    echo "Docker is not installed. Please install Docker first."
+    exit 1
+fi
 
-echo "==== Creating static directory ===="
-mkdir -p app/static
-touch app/static/.gitkeep
+echo "Docker version: $(docker --version)"
+echo "Docker Compose version: $(docker-compose --version)"
 
-echo "==== Checking frontend directory ===="
-ls -la frontend
+# Build the Docker image
+echo "==== Building Docker image ===="
+docker build -t pladder-python-fastapi .
 
-echo "==== Installing frontend dependencies ===="
-cd frontend
-# Use --no-audit to reduce memory usage
-npm ci --no-audit --prefer-offline --no-fund
+echo "==== Docker image built successfully! ===="
 
-# Memory optimization for React build
-export NODE_OPTIONS="--max-old-space-size=2048"
+# Optionally run the containers
+if [ "$1" == "--run" ]; then
+    echo "==== Starting containers with Docker Compose ===="
+    docker-compose up -d
+    echo "==== Application is running! ===="
+    echo "Access the application at http://localhost:8000"
+fi
 
-echo "==== Building frontend with optimizations ===="
-# Use production flag to reduce build size
-npm run build -- --profile
-
-echo "==== Copying built files to static directory ===="
-ls -la build
-cp -rv build/* ../app/static/
-cd ..
-
-echo "==== Checking static directory ===="
-ls -la app/static
-
-echo "==== Build completed successfully! ====" 
+echo "==== Build completed successfully! ===="
+echo "To start the application, run: docker-compose up -d" 

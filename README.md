@@ -141,6 +141,45 @@ cp .env.example .env
 # Edit .env with your values
 ```
 
+## 🐳 Docker Deployment
+
+The application is configured for deployment using Docker, which is recommended for production environments:
+
+### Local Docker Development
+
+1. Make sure Docker and Docker Compose are installed on your system
+2. Clone the repository
+3. Create a `.env` file with your OpenAI API key
+4. Run with Docker Compose:
+   ```bash
+   docker-compose up
+   ```
+5. Access the application at http://localhost:8000
+
+### Railway Deployment with Docker
+
+1. Fork this repository
+2. Create a new project on [Railway](https://railway.app/)
+3. Connect your repository
+4. Add environment variables:
+   - `OPENAI_API_KEY`: Your OpenAI API key
+   - `SECRET_KEY`: A secure random string for encryption
+5. Add a Redis service to your project
+6. Deploy!
+
+Railway will:
+1. Detect the Dockerfile and build it
+2. Start the container with your environment variables
+3. Expose the service on a public URL
+
+### Why Docker?
+
+Docker provides several advantages for deploying this application:
+- Consistent environment across development and production
+- Proper isolation of dependencies
+- Easy scaling
+- Simplified deployment process
+
 ## 📁 Project Structure
 
 ```

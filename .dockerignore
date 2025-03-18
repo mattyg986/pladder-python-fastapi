@@ -1,6 +1,8 @@
 # This project is NOT using Docker - we're using Nixpacks instead
 # This file is just to prevent any accidental Docker builds
 
+# Files and directories to ignore when building the Docker image
+
 # Python
 __pycache__/
 *.py[cod]
@@ -26,33 +28,42 @@ var/
 *.egg
 
 # Node
-node_modules/
-npm-debug.log
-yarn-debug.log
-yarn-error.log
+frontend/node_modules/
+frontend/coverage/
+frontend/.pnp/
+frontend/.pnp.js
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
 
-# IDEs
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# Logs
-logs/
-*.log
-
-# Local development
+# Development/local files
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+.git/
+.github/
+.gitignore
+.vscode/
+.idea/
 
-# Tests
-.coverage
-htmlcov/
-.pytest_cache/
+# Documentation and configuration
+*.md
+.railwayignore
+start.sh
+stop.sh
+test_*.py
 
-# Database
+# Log files
+logs/
+*.log
+
+# Data files
 *.db
-*.sqlite3 
+*.sqlite3
+
+# Old configuration files
+nixpacks.toml
+.nixpacks.toml
+railway.toml 
