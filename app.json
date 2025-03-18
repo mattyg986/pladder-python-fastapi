@@ -1,0 +1,35 @@
+{
+  "name": "Purple Ladder AI Agents Platform",
+  "description": "AI-powered talent acquisition and job matching platform with FastAPI backend and React frontend",
+  "keywords": ["python", "fastapi", "react", "AI", "agents", "recruitment"],
+  "repository": "https://github.com/yourusername/pladder-python-fastapi",
+  "success_url": "/",
+  "env": {
+    "OPENAI_API_KEY": {
+      "description": "Your OpenAI API key",
+      "required": true
+    },
+    "SECRET_KEY": {
+      "description": "A secret key for the application",
+      "generator": "secret"
+    },
+    "RAILWAY_ENVIRONMENT": {
+      "description": "Environment (production or development)",
+      "value": "production"
+    }
+  },
+  "addons": [
+    {
+      "plan": "rediscloud:redis-dev",
+      "as": "REDIS"
+    }
+  ],
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    },
+    {
+      "url": "heroku/python"
+    }
+  ]
+} 

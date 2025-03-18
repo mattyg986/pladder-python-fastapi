@@ -1,0 +1,20 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "bash -c \"cd frontend && npm install && npm run build && mkdir -p ../app/static && cp -r build/* ../app/static/ && cd .. && uvicorn app.main:app --host 0.0.0.0 --port $PORT\""
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+
+[nixpacks]
+nodejs-version = "18"
+python-version = "3.9"
+
+[[nixpacks.pkgs]]
+name = "nodejs"
+version = "18"
+
+[[nixpacks.pkgs]]
+name = "python"
+version = "3.9" 

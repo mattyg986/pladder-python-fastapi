@@ -1,0 +1,1 @@
+web: bash -c "cd frontend && npm install && npm run build && mkdir -p ../app/static && cp -r build/* ../app/static/ && cd .. && uvicorn app.main:app --host 0.0.0.0 --port $PORT" 
