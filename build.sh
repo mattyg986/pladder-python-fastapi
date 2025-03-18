@@ -1,21 +1,42 @@
 #!/bin/bash
-# Simple build script for Railway
+# Enhanced build script for Railway
 
 set -e  # Exit on any error
 
-echo "Installing Python dependencies..."
+echo "==== Build Process Started ===="
+echo "Environment: $RAILWAY_ENVIRONMENT"
+echo "Node version: $(node -v)"
+echo "NPM version: $(npm -v)"
+echo "Python version: $(python --version)"
+
+echo "==== Installing Python dependencies ===="
 pip install -r requirements.txt
 
-echo "Installing frontend dependencies..."
+echo "==== Creating static directory ===="
+mkdir -p app/static
+touch app/static/.gitkeep
+
+echo "==== Checking frontend directory ===="
+ls -la frontend
+
+echo "==== Installing frontend dependencies ===="
 cd frontend
-npm ci
+# Use --no-audit to reduce memory usage
+npm ci --no-audit --prefer-offline --no-fund
 
-echo "Building frontend..."
-npm run build
+# Memory optimization for React build
+export NODE_OPTIONS="--max-old-space-size=2048"
 
-echo "Setting up static files..."
-mkdir -p ../app/static
-cp -r build/* ../app/static/
+echo "==== Building frontend with optimizations ===="
+# Use production flag to reduce build size
+npm run build -- --profile
+
+echo "==== Copying built files to static directory ===="
+ls -la build
+cp -rv build/* ../app/static/
 cd ..
 
-echo "Build completed successfully!" 
+echo "==== Checking static directory ===="
+ls -la app/static
+
+echo "==== Build completed successfully! ====" 

@@ -1,22 +1,15 @@
-[phases.setup]
-nixPkgs = ["nodejs-18_x", "python39", "python39Packages.pip"]
-nodeVersion = "18"
-pythonVersion = "3.9"
+[variables]
+NPM_CONFIG_FUND = "false"
+NPM_CONFIG_AUDIT = "false"
+NODE_ENV = "production"
+NODE_OPTIONS = "--max-old-space-size=2048"
+CI = "true"
 
-[phases.install]
-cmds = [
-  "python -m pip install --upgrade pip",
-  "pip install -r requirements.txt",
-  "cd frontend && npm ci"
-]
+[phases.setup]
+aptPkgs = ["curl", "build-essential"]
 
 [phases.build]
-cmds = [
-  "cd frontend && npm run build",
-  "mkdir -p ../app/static",
-  "cp -r build/* ../app/static/",
-  "cd .."
-]
+cmds = ["./build.sh"]
 
 [start]
 cmd = "uvicorn app.main:app --host 0.0.0.0 --port $PORT" 

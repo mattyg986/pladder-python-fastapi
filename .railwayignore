@@ -1,0 +1,14 @@
+# Ignore large directories that Railway doesn't need
+venv/
+logs/
+__pycache__/
+.git/
+
+# Frontend build-only files
+frontend/node_modules/
+
+# Don't ignore these important files
+!build.sh
+!frontend/package.json
+!frontend/package-lock.json
+!app/static/.gitkeep 
