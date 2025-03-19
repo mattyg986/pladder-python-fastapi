@@ -1,13 +1,13 @@
 import os
-from typing import List, Union
+from typing import List, Optional, Union
 
-from pydantic import AnyHttpUrl, field_validator
+from pydantic import AnyHttpUrl, field_validator, validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    PROJECT_NAME: str = "Purple Ladder AI Agents Platform"
     API_V1_STR: str = "/api/v1"
-    PROJECT_NAME: str = "Purple Ladder AI Agents"
     
     # Environment
     ENVIRONMENT: str = os.getenv("RAILWAY_ENVIRONMENT", "development")
@@ -16,32 +16,29 @@ class Settings(BaseSettings):
     SECRET_KEY: str = os.getenv("SECRET_KEY", "1aa28c01dbfb5ad6ad45cb9f6f3f71b18a43d47d10277e8e")
     
     # CORS Settings
-    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:3000")
-    CORS_ORIGINS: Union[List[str], str] = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:8000")
+    CORS_ORIGINS: List[Union[str, AnyHttpUrl]] = [
+        "http://localhost:3000",  # React dev server
+        "http://localhost:3001",  # React dev server alternate port
+        "http://localhost:8000",  # Backend dev server
+        "http://frontend",        # Frontend container in docker network
+        "http://frontend:80",     # Frontend container with port in docker network
+        "https://pladder.app",    # Production domain
+    ]
     
-    @field_validator("CORS_ORIGINS")
-    def assemble_cors_origins(cls, v: Union[List[str], str]) -> List[str]:
+    @validator("CORS_ORIGINS", pre=True)
+    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
         if isinstance(v, str):
-            origins = [i.strip() for i in v.split(",") if i.strip()]
-        else:
-            origins = [origin for origin in v if origin]
-            
-        # In production, allow the deployed URL
-        if os.getenv("RAILWAY_ENVIRONMENT") == "production":
-            origins.append("*")  # Allow all origins in production
-            
-        # Always include localhost for development
-        if "http://localhost:3000" not in origins:
-            origins.append("http://localhost:3000")  # React default
-        if "http://localhost:8000" not in origins:
-            origins.append("http://localhost:8000")  # FastAPI default
-            
-        # Add FRONTEND_URL if set and not already in the list
-        frontend_url = os.getenv("FRONTEND_URL")
-        if frontend_url and frontend_url not in origins:
-            origins.append(frontend_url)
-            
-        return origins
+            # Handle quoted string with commas
+            if v.startswith('"') and v.endswith('"'):
+                v = v[1:-1]
+            # Handle normal comma-separated string
+            if "," in v:
+                return [i.strip() for i in v.split(",")]
+            # Handle single URL
+            return [v.strip()]
+        elif isinstance(v, list):
+            return v
+        raise ValueError(f"Invalid CORS_ORIGINS format: {v}")
     
     # Redis and Celery
     # For Railway, use the REDIS_URL environment variable if available
@@ -59,6 +56,7 @@ class Settings(BaseSettings):
     # Supabase Configuration
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
     SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")
+    SUPABASE_JWT_SECRET: Optional[str] = None
     
     # OpenAI Settings
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")

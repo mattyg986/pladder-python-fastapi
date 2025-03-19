@@ -1,85 +1,47 @@
-# Docker ignore file - files and directories to exclude from Docker builds
-
-# Version control and IDE
-.git/
-.github/
+# Git
+.git
 .gitignore
-.vscode/
-.idea/
-**/__pycache__/
-**/.pytest_cache/
-**/.coverage
-**/.DS_Store
 
-# Python
+# Node.js (for frontend)
+**/node_modules
+**/npm-debug.log
+
+# Python (for backend)
+**/__pycache__
 **/*.py[cod]
 **/*$py.class
 **/*.so
-.Python
-env/
-venv/
-ENV/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
+**/.Python
+**/env/
+**/build/
+**/develop-eggs/
+**/dist/
+**/downloads/
+**/eggs/
+**/.eggs/
+**/lib/
+**/lib64/
+**/parts/
+**/sdist/
+**/var/
+**/wheels/
 **/*.egg-info/
-.installed.cfg
+**/.installed.cfg
 **/*.egg
 
-# Node
-frontend/node_modules/
-frontend/coverage/
-frontend/.pnp/
-frontend/.pnp.js
-frontend/npm-debug.log*
-frontend/yarn-debug.log*
-frontend/yarn-error.log*
-frontend/build/stats.json
-frontend/build/asset-manifest.json
-frontend/.npm/
+# Virtual Environment
+**/venv
+**/env
+**/.env
+**/.venv
+**/ENV
 
-# Large or unnecessary files
-**/*.mp4
-**/*.mov
-**/*.avi
-**/*.gz
-**/*.tar
-**/*.zip
-**/*.rar
-**/*.7z
+# IDEs and editors
+**/.idea
+**/.vscode
+**/*.swp
+**/*.swo
 
-# Environment variables and secrets
-.env*
-!.env.example
-
-# Test files
-test_*.py
-tests/
-
-# Log files
-logs/
-**/*.log
-
-# Data files
-**/*.db
-**/*.sqlite3
-
-# Documentation
-*.md
-!README.md
-!DEPLOYMENT.md
-
-# Deployment scripts and configurations 
-# (handled by Railway or Docker Compose)
-deploy.sh
-
-# Old configuration files
-# All removed in cleanup 
+# OS specific
+.DS_Store
+Thumbs.db

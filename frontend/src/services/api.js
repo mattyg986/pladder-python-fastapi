@@ -1,104 +1,181 @@
-import { supabase } from './supabase';
+/**
+ * API service for handling authenticated requests to the backend
+ */
 
-// Base URL for API requests (in development, uses proxy in package.json)
-const API_BASE_URL = '/api/v1';
+// Determine if we're running in the browser
+const isBrowser = typeof window !== 'undefined';
+
+// Get the API URL based on environment - use localhost for browser requests
+const API_URL = isBrowser 
+  ? (process.env.REACT_APP_API_URL?.replace('http://backend', 'http://localhost') || 'http://localhost:8000') 
+  : (process.env.REACT_APP_API_URL || 'http://backend:8000');
+
+console.log("API Service initialized with URL:", API_URL);
+console.log("Running in browser:", isBrowser);
 
 /**
- * Make an authenticated request to the API
- * @param {string} endpoint - The API endpoint to call
- * @param {Object} options - Fetch options
- * @returns {Promise<any>} - API response
+ * Make an authenticated API request
+ * @param {string} endpoint - API endpoint to call (without the base URL)
+ * @param {Object} options - Request options
+ * @param {string} token - Authentication token
+ * @returns {Promise} - Fetch promise
  */
-export const apiRequest = async (endpoint, options = {}) => {
+export const apiRequest = async (endpoint, options = {}, token = null) => {
+  console.log("API URL:", API_URL);
+  const url = `${API_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+  console.log("Making API request to:", url);
+  
+  // Set up default headers
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
+  
+  // Add authorization header if token is provided
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  // Merge options with defaults
+  const fetchOptions = {
+    ...options,
+    headers,
+  };
+  
   try {
-    // Get the current session for auth token
-    const { data: { session } } = await supabase.auth.getSession();
+    console.log(`Fetching ${url} with options:`, fetchOptions);
+    const response = await fetch(url, fetchOptions);
+    console.log(`Received response from ${url}:`, response.status);
     
-    // Set default headers
-    const headers = {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    };
-    
-    // Add authorization header if we have a session
-    if (session?.access_token) {
-      headers['Authorization'] = `Bearer ${session.access_token}`;
+    // Parse response
+    let data;
+    const contentType = response.headers.get('Content-Type');
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      data = await response.text();
     }
-
-    // Build request URL
-    const url = `${API_BASE_URL}${endpoint}`;
     
-    // Make the request
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
-    
-    // Parse JSON response
-    const data = await response.json();
-    
-    // Handle API errors
+    // Check if the request was successful
     if (!response.ok) {
-      throw new Error(data.detail || 'API request failed');
+      console.error(`API request failed: ${response.status}`, data);
+      throw new Error(data.detail || data.message || `API request failed with status ${response.status}`);
     }
     
-    return data;
+    return { data, status: response.status, ok: response.ok };
   } catch (error) {
     console.error('API request error:', error);
+    // Check if this is a network error (e.g. CORS, connection refused)
+    if (error.message && (
+      error.message.includes('NetworkError') || 
+      error.message.includes('Failed to fetch') ||
+      error.message.includes('Network request failed')
+    )) {
+      console.error('Network error detected - possible CORS or connection issue');
+      // You might want to show a user-friendly message here
+    }
     throw error;
   }
 };
 
+/**
+ * Make an authenticated GET request
+ * @param {string} endpoint - API endpoint
+ * @param {string} token - Authentication token
+ * @returns {Promise} - API response
+ */
+export const get = async (endpoint, token) => {
+  return apiRequest(endpoint, { method: 'GET' }, token);
+};
+
+/**
+ * Make an authenticated POST request
+ * @param {string} endpoint - API endpoint
+ * @param {Object} data - Request body data
+ * @param {string} token - Authentication token
+ * @returns {Promise} - API response
+ */
+export const post = async (endpoint, data, token) => {
+  return apiRequest(
+    endpoint,
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+    },
+    token
+  );
+};
+
+/**
+ * Make an authenticated PUT request
+ * @param {string} endpoint - API endpoint
+ * @param {Object} data - Request body data
+ * @param {string} token - Authentication token
+ * @returns {Promise} - API response
+ */
+export const put = async (endpoint, data, token) => {
+  return apiRequest(
+    endpoint,
+    {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    },
+    token
+  );
+};
+
+/**
+ * Make an authenticated DELETE request
+ * @param {string} endpoint - API endpoint
+ * @param {string} token - Authentication token
+ * @returns {Promise} - API response
+ */
+export const del = async (endpoint, token) => {
+  return apiRequest(endpoint, { method: 'DELETE' }, token);
+};
+
 // Example API functions
-export const getUserInfo = () => {
-  return apiRequest('/auth/me');
+export const getUserInfo = (token) => {
+  return get('/api/v1/auth/me', token);
 };
 
 export const getPublicData = () => {
-  return apiRequest('/auth/public-data');
+  return get('/api/v1/auth/public-data');
 };
 
 // Agents API
-export const fetchAgents = async () => {
-  const response = await apiRequest('/agents');
+export const fetchAgents = async (token) => {
+  const response = await get('/api/v1/agents', token);
   return response.data;
 };
 
-export const fetchAgent = async (agentId) => {
-  const response = await apiRequest(`/agents/${agentId}`);
+export const fetchAgent = async (agentId, token) => {
+  const response = await get(`/api/v1/agents/${agentId}`, token);
   return response.data;
 };
 
-export const createAgent = async (agentData) => {
-  const response = await apiRequest('/agents', {
-    method: 'POST',
-    body: JSON.stringify(agentData),
-  });
+export const createAgent = async (agentData, token) => {
+  const response = await post('/api/v1/agents', agentData, token);
   return response.data;
 };
 
 // Tasks API
-export const fetchTasks = async () => {
-  // In a real application, you would have an endpoint to fetch all tasks
-  // For now, we'll simulate empty data
-  return [];
+export const fetchTasks = async (token) => {
+  const response = await get('/api/v1/tasks', token);
+  return response.data || [];
 };
 
-export const fetchAgentTasks = async (agentId) => {
-  // In a real application, you would fetch tasks for a specific agent
-  // For now, we'll simulate empty data
-  return [];
+export const fetchAgentTasks = async (agentId, token) => {
+  const response = await get(`/api/v1/agents/${agentId}/tasks`, token);
+  return response.data || [];
 };
 
-export const createAgentTask = async (agentId, taskData) => {
-  const response = await apiRequest(`/agents/${agentId}/tasks`, {
-    method: 'POST',
-    body: JSON.stringify(taskData),
-  });
+export const createAgentTask = async (agentId, taskData, token) => {
+  const response = await post(`/api/v1/agents/${agentId}/tasks`, taskData, token);
   return response.data;
 };
 
-export const fetchTaskStatus = async (agentId, taskId) => {
-  const response = await apiRequest(`/agents/${agentId}/tasks/${taskId}`);
+export const fetchTaskStatus = async (agentId, taskId, token) => {
+  const response = await get(`/api/v1/agents/${agentId}/tasks/${taskId}`, token);
   return response.data;
 };

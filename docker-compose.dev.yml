@@ -1,0 +1,41 @@
+services:
+  # Backend API service - Development mode
+  backend:
+    build:
+      args:
+        - APP_ENV=development
+    command: uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+    environment:
+      - APP_ENV=development
+      - PRODUCTION=false
+      - DEBUG=true
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/migrations:/app/migrations
+      - ./backend/tests:/app/tests
+  
+  # Frontend React application - Development mode
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+      args:
+        - NODE_ENV=development
+        - REACT_APP_SUPABASE_URL=${REACT_APP_SUPABASE_URL}
+        - REACT_APP_SUPABASE_ANON_KEY=${REACT_APP_SUPABASE_ANON_KEY}
+    ports:
+      - "3001:3000"
+    command: npm run start
+    environment:
+      - NODE_ENV=development
+      - REACT_APP_API_URL=http://backend:8000
+      - CHOKIDAR_USEPOLLING=true
+      - REACT_APP_SUPABASE_URL=${REACT_APP_SUPABASE_URL}
+      - REACT_APP_SUPABASE_ANON_KEY=${REACT_APP_SUPABASE_ANON_KEY}
+      - PORT=3000
+      - WDS_SOCKET_PORT=3001
+      - PUBLIC_URL=http://localhost:3001
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - /app/node_modules 

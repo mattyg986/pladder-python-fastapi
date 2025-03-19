@@ -1,5 +1,5 @@
 #!/bin/bash
-# Unified deployment script for local and Railway environments
+# Deployment script for development and production environments
 
 set -e  # Exit on any error
 
@@ -21,56 +21,30 @@ echo -e "${YELLOW}Cleaning up temporary files...${NC}"
 find . -name "__pycache__" -type d -exec rm -rf {} +
 find . -name "*.pyc" -delete
 
-# Ensure app/static directory exists
-if [ ! -d "app/static" ]; then
-    echo -e "${YELLOW}Creating app/static directory...${NC}"
-    mkdir -p app/static
-    touch app/static/.gitkeep
-fi
-
 case $DEPLOY_ENV in
     development)
-        echo -e "${GREEN}Starting local development environment...${NC}"
+        echo -e "${GREEN}Starting development environment with Docker...${NC}"
         
-        # Check for Python virtual environment
-        if [ ! -d "venv" ]; then
-            echo -e "${YELLOW}Creating Python virtual environment...${NC}"
-            python3 -m venv venv
-        fi
-        
-        # Activate virtual environment
-        echo -e "${YELLOW}Activating virtual environment...${NC}"
-        source venv/bin/activate
-        
-        # Install Python dependencies
-        echo -e "${YELLOW}Installing Python dependencies...${NC}"
-        pip install -r requirements.txt
-        
-        # Start with docker-compose for development
-        echo -e "${GREEN}Starting services with Docker Compose...${NC}"
+        # Set environment variables
         export APP_ENV=development
         export PRODUCTION=false
-        export MOUNT_APP=./app:/app/app
-        export WEB_COMMAND="uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
         
-        # Build and start services
-        docker-compose up --build
+        # Build and start services with dev configuration
+        docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
         ;;
         
     production)
-        echo -e "${GREEN}Starting production deployment...${NC}"
+        echo -e "${GREEN}Starting production deployment with Docker...${NC}"
         
-        # Build for production with docker-compose
-        echo -e "${YELLOW}Building for production...${NC}"
+        # Set environment variables
         export APP_ENV=production
         export PRODUCTION=true
-        export MOUNT_APP=./app:/app/app:ro
-        export WEB_COMMAND="gunicorn -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000 app.main:app"
         
-        docker-compose build
+        # Build and start services
+        docker compose up --build -d
         
-        echo -e "${GREEN}Production build completed.${NC}"
-        echo -e "${YELLOW}To start services: docker-compose up -d${NC}"
+        echo -e "${GREEN}Production deployment completed.${NC}"
+        echo -e "${YELLOW}To view logs: docker compose logs -f${NC}"
         ;;
         
     railway)
@@ -109,4 +83,4 @@ case $DEPLOY_ENV in
         ;;
 esac
 
-echo -e "${GREEN}=== Deployment process completed ===${NC}" 
+echo -e "${GREEN}=== Deployment process completed ===${NC}"

@@ -1,10 +1,11 @@
-version: '3.8'
-
 services:
-  web:
+  # Backend API service
+  backend:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
+      args:
+        - APP_ENV=${APP_ENV:-development}
     ports:
       - "8000:8000"
     environment:
@@ -12,49 +13,79 @@ services:
       - APP_ENV=${APP_ENV:-development}
       - PRODUCTION=${PRODUCTION:-false}
       - PORT=8000
-      # Redis configuration:
-      # - For development: Uses the public URL from .env
-      # - For production on Railway: Railway automatically injects ${{ Redis.REDIS_URL }} 
-      #   through its service connection feature - you don't need to manually set it
+      # Redis configuration - Use Railway Redis URL in development and production
       - REDIS_URL=${REDIS_URL}
       # Supabase configuration for backend
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_KEY=${SUPABASE_KEY}
-      # Supabase configuration for frontend
-      - REACT_APP_SUPABASE_URL=${REACT_APP_SUPABASE_URL}
-      - REACT_APP_SUPABASE_ANON_KEY=${REACT_APP_SUPABASE_ANON_KEY}
-    command: ${WEB_COMMAND:-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload}
+      - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
+      # CORS settings - Fix quotes for proper JSON parsing
+      - CORS_ORIGINS="http://localhost:3000,http://frontend:80,http://frontend,http://localhost:3001"
     volumes:
-      # Mount app code for development hot reloading
-      - ${MOUNT_APP:-./app:/app/app}
+      - ./backend/app:/app/app
+      - ./backend/migrations:/app/migrations
+    restart: unless-stopped
+    networks:
+      - pladder-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
   
+  # Celery worker service
   worker:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
-    command: celery -A app.worker worker --loglevel=info --concurrency=${CELERY_CONCURRENCY:-2}
+    command: bash -c "pip install PyJWT==2.6.0 && celery -A app.worker worker --loglevel=info --concurrency=${CELERY_CONCURRENCY:-2}"
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - APP_ENV=${APP_ENV:-development}
       - PRODUCTION=${PRODUCTION:-false}
-      # Redis configuration:
-      # - For development: Uses the public URL from .env
-      # - For production on Railway: Railway automatically injects ${{ Redis.REDIS_URL }} 
-      #   through its service connection feature - you don't need to manually set it
+      # Redis configuration - Use Railway Redis URL in development and production
       - REDIS_URL=${REDIS_URL}
       # Supabase configuration for backend
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_KEY=${SUPABASE_KEY}
     volumes:
-      # Mount app code for development hot reloading
-      - ${MOUNT_APP:-./app:/app/app}
+      - ./backend/app:/app/app
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - pladder-network
+  
+  # Frontend React application
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - REACT_APP_SUPABASE_URL=${REACT_APP_SUPABASE_URL}
+        - REACT_APP_SUPABASE_ANON_KEY=${REACT_APP_SUPABASE_ANON_KEY}
+        - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8000}
+        - NODE_ENV=${NODE_ENV:-production}
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+    environment:
+      - API_URL=http://backend:8000
+      - REACT_APP_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    networks:
+      - pladder-network
+    # For development, you can uncomment these lines to use the dev server instead
+    # command: npm run start
+    # volumes:
+    #   - ./frontend/src:/app/src
+    #   - ./frontend/public:/app/public
 
-# Redis Configuration:
-# - In development: Using Railway's public network URL in .env file
-# - In production: Railway handles service connections automatically
-#   When you connect the Redis service to your app in the Railway dashboard,
-#   it automatically provides ${{ Redis.REDIS_URL }} to your application.
+networks:
+  pladder-network:
+    driver: bridge
 
 volumes:
-  # Keep this for compatibility reasons
   redis-data: 
