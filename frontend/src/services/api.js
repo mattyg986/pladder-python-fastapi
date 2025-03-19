@@ -1,27 +1,79 @@
-import axios from 'axios';
+import { supabase } from './supabase';
 
-const API_URL = '/api/v1';
+// Base URL for API requests (in development, uses proxy in package.json)
+const API_BASE_URL = '/api/v1';
 
-const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+/**
+ * Make an authenticated request to the API
+ * @param {string} endpoint - The API endpoint to call
+ * @param {Object} options - Fetch options
+ * @returns {Promise<any>} - API response
+ */
+export const apiRequest = async (endpoint, options = {}) => {
+  try {
+    // Get the current session for auth token
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    // Set default headers
+    const headers = {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    };
+    
+    // Add authorization header if we have a session
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`;
+    }
+
+    // Build request URL
+    const url = `${API_BASE_URL}${endpoint}`;
+    
+    // Make the request
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    });
+    
+    // Parse JSON response
+    const data = await response.json();
+    
+    // Handle API errors
+    if (!response.ok) {
+      throw new Error(data.detail || 'API request failed');
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('API request error:', error);
+    throw error;
+  }
+};
+
+// Example API functions
+export const getUserInfo = () => {
+  return apiRequest('/auth/me');
+};
+
+export const getPublicData = () => {
+  return apiRequest('/auth/public-data');
+};
 
 // Agents API
 export const fetchAgents = async () => {
-  const response = await api.get('/agents');
+  const response = await apiRequest('/agents');
   return response.data;
 };
 
 export const fetchAgent = async (agentId) => {
-  const response = await api.get(`/agents/${agentId}`);
+  const response = await apiRequest(`/agents/${agentId}`);
   return response.data;
 };
 
 export const createAgent = async (agentData) => {
-  const response = await api.post('/agents', agentData);
+  const response = await apiRequest('/agents', {
+    method: 'POST',
+    body: JSON.stringify(agentData),
+  });
   return response.data;
 };
 
@@ -39,13 +91,14 @@ export const fetchAgentTasks = async (agentId) => {
 };
 
 export const createAgentTask = async (agentId, taskData) => {
-  const response = await api.post(`/agents/${agentId}/tasks`, taskData);
+  const response = await apiRequest(`/agents/${agentId}/tasks`, {
+    method: 'POST',
+    body: JSON.stringify(taskData),
+  });
   return response.data;
 };
 
 export const fetchTaskStatus = async (agentId, taskId) => {
-  const response = await api.get(`/agents/${agentId}/tasks/${taskId}`);
+  const response = await apiRequest(`/agents/${agentId}/tasks/${taskId}`);
   return response.data;
 };
-
-export default api;

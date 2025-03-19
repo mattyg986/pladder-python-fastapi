@@ -9,6 +9,7 @@ A Python microservice for the Purple Ladder talent/job platform that manages AI 
 - **Task Management**: Celery
 - **Task Monitoring**: Flower (UI for Celery)
 - **Frontend**: React
+- **Auth & Database**: Supabase
 
 ## 🤖 Core Features
 
@@ -18,6 +19,7 @@ A Python microservice for the Purple Ladder talent/job platform that manages AI 
 - Candidate-Job Matching Agents
 - Agent Orchestration
 - Real-time Task Monitoring
+- User Authentication via Supabase
 
 ## 🚀 Getting Started
 
@@ -27,6 +29,7 @@ A Python microservice for the Purple Ladder talent/job platform that manages AI 
 - Docker and Docker Compose
 - Node.js 18+ (for local frontend development)
 - OpenAI API Key
+- Supabase Project (for authentication and database)
 
 ### Local Development Setup
 
@@ -36,9 +39,17 @@ A Python microservice for the Purple Ladder talent/job platform that manages AI 
    cd pladder-python-fastapi
    ```
 
-2. Create a `.env` file with your OpenAI API key:
+2. Create a `.env` file with your OpenAI API key and Supabase credentials:
    ```
    OPENAI_API_KEY=your_openai_api_key_here
+   
+   # Supabase Configuration for backend
+   SUPABASE_URL=your_supabase_project_url
+   SUPABASE_KEY=your_supabase_service_role_key
+   
+   # Supabase Configuration for frontend
+   REACT_APP_SUPABASE_URL=your_supabase_project_url
+   REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
 
 3. Run the unified deployment script:
@@ -51,6 +62,12 @@ This will:
 - Install all dependencies
 - Start the application with hot-reload
 - Set up Redis, Celery workers, and all required services
+
+4. Start the React frontend:
+   ```bash
+   cd frontend
+   ./start-dev.sh
+   ```
 
 ### Production Deployment
 
@@ -84,6 +101,8 @@ The application consists of:
 2. **Worker Service** - Celery worker for background tasks
 
 3. **Redis** - Message broker for Celery
+
+4. **Supabase** - Authentication and database
 
 ## 🧪 Testing
 

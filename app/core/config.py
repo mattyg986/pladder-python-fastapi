@@ -17,24 +17,31 @@ class Settings(BaseSettings):
     
     # CORS Settings
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:3000")
-    CORS_ORIGINS: List[str] = [
-        "http://localhost:3000",  # React default
-        "http://localhost:8000",  # FastAPI default
-        os.getenv("FRONTEND_URL", ""),  # From .env
-    ]
+    CORS_ORIGINS: Union[List[str], str] = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:8000")
     
     @field_validator("CORS_ORIGINS")
-    def assemble_cors_origins(cls, v: List[str]) -> Union[List[str], str]:
-        # Remove empty strings
-        v = [origin for origin in v if origin]
+    def assemble_cors_origins(cls, v: Union[List[str], str]) -> List[str]:
+        if isinstance(v, str):
+            origins = [i.strip() for i in v.split(",") if i.strip()]
+        else:
+            origins = [origin for origin in v if origin]
+            
         # In production, allow the deployed URL
         if os.getenv("RAILWAY_ENVIRONMENT") == "production":
-            v.append("*")  # Allow all origins in production
-        if isinstance(v, str) and not v.startswith("["):
-            return [i.strip() for i in v.split(",")]
-        elif isinstance(v, list):
-            return v
-        raise ValueError(v)
+            origins.append("*")  # Allow all origins in production
+            
+        # Always include localhost for development
+        if "http://localhost:3000" not in origins:
+            origins.append("http://localhost:3000")  # React default
+        if "http://localhost:8000" not in origins:
+            origins.append("http://localhost:8000")  # FastAPI default
+            
+        # Add FRONTEND_URL if set and not already in the list
+        frontend_url = os.getenv("FRONTEND_URL")
+        if frontend_url and frontend_url not in origins:
+            origins.append(frontend_url)
+            
+        return origins
     
     # Redis and Celery
     # For Railway, use the REDIS_URL environment variable if available
@@ -49,9 +56,9 @@ class Settings(BaseSettings):
     def CELERY_RESULT_BACKEND(self) -> str:
         return self.REDIS_URL
     
-    # Database
-    # Use DATABASE_URL from Railway if available
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./app.db")
+    # Supabase Configuration
+    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
+    SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")
     
     # OpenAI Settings
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
@@ -60,10 +67,17 @@ class Settings(BaseSettings):
     PORT: int = int(os.getenv("PORT", "8000"))
     HOST: str = "0.0.0.0"  # Allow external connections
     
+    # Additional fields from .env that might be used
+    APP_ENV: str = os.getenv("APP_ENV", "development")
+    PRODUCTION: bool = os.getenv("PRODUCTION", "false").lower() == "true"
+    REACT_APP_SUPABASE_URL: str = os.getenv("REACT_APP_SUPABASE_URL", "")
+    REACT_APP_SUPABASE_ANON_KEY: str = os.getenv("REACT_APP_SUPABASE_ANON_KEY", "")
+    
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=True,
+        extra="ignore",  # Allow extra fields in .env file
     )
 
 

@@ -11,6 +11,13 @@ echo "PRODUCTION: $PRODUCTION"
 export PRODUCTION=true
 export APP_ENV=production
 
+# Check if Supabase URL and key are set
+if [ -n "$SUPABASE_URL" ] && [ -n "$SUPABASE_KEY" ]; then
+  echo "Supabase environment variables are set"
+else
+  echo "WARNING: Supabase environment variables are not set!"
+fi
+
 # Give time for any dependent services to be ready
 echo "Waiting for dependent services to be ready..."
 sleep 5

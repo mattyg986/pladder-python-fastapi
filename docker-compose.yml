@@ -12,11 +12,18 @@ services:
       - APP_ENV=${APP_ENV:-development}
       - PRODUCTION=${PRODUCTION:-false}
       - PORT=8000
-      - REDIS_URL=redis://redis:6379/0
-      - DATABASE_URL=${DATABASE_URL:-sqlite:///./app.db}
+      # Redis configuration:
+      # - For development: Uses the public URL from .env
+      # - For production on Railway: Railway automatically injects ${{ Redis.REDIS_URL }} 
+      #   through its service connection feature - you don't need to manually set it
+      - REDIS_URL=${REDIS_URL}
+      # Supabase configuration for backend
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      # Supabase configuration for frontend
+      - REACT_APP_SUPABASE_URL=${REACT_APP_SUPABASE_URL}
+      - REACT_APP_SUPABASE_ANON_KEY=${REACT_APP_SUPABASE_ANON_KEY}
     command: ${WEB_COMMAND:-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload}
-    depends_on:
-      - redis
     volumes:
       # Mount app code for development hot reloading
       - ${MOUNT_APP:-./app:/app/app}
@@ -30,20 +37,24 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - APP_ENV=${APP_ENV:-development}
       - PRODUCTION=${PRODUCTION:-false}
-      - REDIS_URL=redis://redis:6379/0
-      - DATABASE_URL=${DATABASE_URL:-sqlite:///./app.db}
-    depends_on:
-      - redis
+      # Redis configuration:
+      # - For development: Uses the public URL from .env
+      # - For production on Railway: Railway automatically injects ${{ Redis.REDIS_URL }} 
+      #   through its service connection feature - you don't need to manually set it
+      - REDIS_URL=${REDIS_URL}
+      # Supabase configuration for backend
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
     volumes:
       # Mount app code for development hot reloading
       - ${MOUNT_APP:-./app:/app/app}
-  
-  redis:
-    image: redis:alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
+
+# Redis Configuration:
+# - In development: Using Railway's public network URL in .env file
+# - In production: Railway handles service connections automatically
+#   When you connect the Redis service to your app in the Railway dashboard,
+#   it automatically provides ${{ Redis.REDIS_URL }} to your application.
 
 volumes:
+  # Keep this for compatibility reasons
   redis-data: 

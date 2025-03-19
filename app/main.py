@@ -1,14 +1,15 @@
 import logging
 import os
 import datetime
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, HTMLResponse
 import pathlib
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.config import settings
-from app.core.init_db import init_db, create_initial_data
+from app.core.supabase_client import supabase, get_supabase
 from app.api import api_router
 from agents import set_tracing_disabled, enable_verbose_stdout_logging, set_default_openai_key
 
@@ -31,108 +32,123 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Auth check helper function
+async def is_authenticated(request: Request) -> bool:
+    """Check if the request has a valid auth token."""
+    # First try Authorization header
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.replace("Bearer ", "")
+    else:
+        # Try to get token from cookies
+        sb_auth_token = request.cookies.get("sb-access-token")
+        if not sb_auth_token:
+            return False
+        token = sb_auth_token
+    
+    try:
+        # Verify with Supabase
+        supabase = get_supabase()
+        response = supabase.auth.get_user(token)
+        return response.user is not None
+    except Exception as e:
+        logger.debug(f"Auth check failed: {str(e)}")
+        return False
+
 # Import API routers - must be before the static file handlers
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
-# Add specific API endpoints BEFORE mounting static files
+# Add health check endpoint
 @app.get("/api/health")
 def health_check():
     """Health check endpoint that returns JSON."""
-    # Simple health check that doesn't depend on database or other services
-    # This ensures the app can respond even if some services aren't ready yet
     return {"status": "healthy", "timestamp": str(datetime.datetime.now())}
 
 # Check if we're in a production environment
 is_production = os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("PRODUCTION")
+
+# Define public paths that don't require authentication
+PUBLIC_PATHS = {
+    "/",  # Add root path as public
+    "/signin",
+    "/static",
+    "/api/health",
+    "/favicon.ico",
+    "/manifest.json",
+    "/logo192.png",
+    "/logo512.png",
+    "/api/docs",
+    "/api/openapi.json"
+}
+
+@app.middleware("http")
+async def auth_middleware(request: Request, call_next):
+    """Middleware to check authentication for all routes except public ones."""
+    path = request.url.path
+    
+    # Skip auth check for public paths and static files
+    if any(path.startswith(public_path) for public_path in PUBLIC_PATHS):
+        # If authenticated user tries to access signin, redirect to dashboard
+        if path == "/signin":
+            is_auth = await is_authenticated(request)
+            if is_auth:
+                return RedirectResponse(url="/dashboard", status_code=302)
+        response = await call_next(request)
+        return response
+    
+    # Skip auth check for API routes (they handle their own auth)
+    if path.startswith("/api/"):
+        response = await call_next(request)
+        return response
+    
+    # Check authentication
+    is_auth = await is_authenticated(request)
+    
+    # For all other routes, require authentication
+    if not is_auth:
+        return RedirectResponse(url="/signin", status_code=302)
+    
+    response = await call_next(request)
+    return response
 
 # Handle production static files (built React app)
 static_dir = pathlib.Path(__file__).parent / "static"
 if is_production and static_dir.exists():
     logger.info(f"Serving static files from {static_dir}")
     
-    # React creates a nested static directory structure when built:
-    # app/static/static/js/main.js
-    # app/static/static/css/main.css
-    # We need to mount the inner static directory to /static to serve these files correctly
-    nested_static_dir = static_dir / "static"
-    if nested_static_dir.exists():
-        logger.info(f"Serving nested static files from {nested_static_dir}")
-        app.mount("/static", StaticFiles(directory=str(nested_static_dir)), name="static")
-
-@app.get("/")
-async def root(request: Request):
-    """Root endpoint - either returns API info or serves frontend."""
-    if is_production and static_dir.exists():
-        index_path = static_dir / "index.html"
-        if index_path.exists():
-            return FileResponse(index_path)
+    # First mount specific static files at root level
+    for static_file in ["favicon.ico", "manifest.json", "logo192.png", "logo512.png"]:
+        file_path = static_dir / static_file
+        if file_path.exists():
+            app.mount(f"/{static_file}", StaticFiles(directory=str(static_dir), html=True, check_dir=False), name=static_file)
     
-    return {
-        "message": "Welcome to Purple Ladder AI Agents Platform API",
-        "docs": "/docs",
-    }
+    # Then mount the static directory for JS/CSS assets
+    static_assets_dir = static_dir / "static"
+    if static_assets_dir.exists():
+        app.mount("/static", StaticFiles(directory=str(static_assets_dir)), name="static")
 
-# The following handlers serve static files from the root level of the React build
-# These are necessary because these files are referenced directly from index.html
-# and are not under the /static path
-
-@app.get("/favicon.ico")
-async def favicon():
-    """Serve favicon.ico from static directory."""
-    if is_production and static_dir.exists():
-        favicon_path = static_dir / "favicon.ico"
-        if favicon_path.exists():
-            return FileResponse(favicon_path)
-    return JSONResponse({"detail": "Not found"}, status_code=404)
-
-@app.get("/manifest.json")
-async def manifest():
-    """Serve manifest.json from static directory."""
-    if is_production and static_dir.exists():
-        manifest_path = static_dir / "manifest.json"
-        if manifest_path.exists():
-            return FileResponse(manifest_path)
-    return JSONResponse({"detail": "Not found"}, status_code=404)
-
-@app.get("/logo192.png")
-async def logo192():
-    """Serve logo192.png from static directory."""
-    if is_production and static_dir.exists():
-        logo_path = static_dir / "logo192.png"
-        if logo_path.exists():
-            return FileResponse(logo_path)
-    return JSONResponse({"detail": "Not found"}, status_code=404)
-
-@app.get("/logo512.png")
-async def logo512():
-    """Serve logo512.png from static directory."""
-    if is_production and static_dir.exists():
-        logo_path = static_dir / "logo512.png"
-        if logo_path.exists():
-            return FileResponse(logo_path)
-    return JSONResponse({"detail": "Not found"}, status_code=404)
-
-# Serve static files for production React frontend and handle client-side routing
-# This catch-all route must be LAST, after all other routes are defined
+# Serve index.html for all non-file routes in production
 @app.get("/{catch_all:path}")
 async def serve_frontend(catch_all: str, request: Request):
     """Serve frontend for all other routes in production."""
-    # Skip API routes - they should be handled by their own handlers
-    if catch_all.startswith("api/"):
-        return JSONResponse({"detail": "API endpoint not found"}, status_code=404)
-        
     if not is_production or not static_dir.exists():
         return JSONResponse({"detail": "Not found"}, status_code=404)
     
-    # First check if this is a static file that needs to be served
-    static_file = static_dir / catch_all
-    if static_file.exists() and static_file.is_file():
-        return FileResponse(static_file)
+    # For authenticated users trying to access signin, redirect to dashboard
+    is_auth = await is_authenticated(request)
+    if is_auth and catch_all == "signin":
+        return RedirectResponse(url="/dashboard", status_code=302)
     
-    # If not a static file, serve index.html to support client-side routing in React
+    # For unauthenticated users, only allow public paths
+    if not is_auth and catch_all not in ["", "signin"]:
+        return RedirectResponse(url="/signin", status_code=302)
+    
+    # For all routes, serve index.html
     index_path = static_dir / "index.html"
     if index_path.exists():
-        return FileResponse(index_path)
+        response = FileResponse(index_path)
+        response.headers["Cache-Control"] = "no-store, max-age=0"
+        return response
     
     return JSONResponse({"detail": "Not found"}, status_code=404)
 
@@ -140,14 +156,64 @@ async def serve_frontend(catch_all: str, request: Request):
 async def startup_event():
     """Initialize services on application startup."""
     try:
-        # Initialize the database
-        logger.info("Initializing database...")
-        init_db()
-        create_initial_data()
-        logger.info("Database initialization complete.")
+        # Initialize Supabase connection
+        logger.info("Checking Supabase connection...")
+        sb = get_supabase()
+        if sb:
+            # Check connection to Supabase
+            user_count = sb.table('agents').select('id').execute()
+            logger.info(f"Supabase connection successful")
+            
+            # Initialize sample data if needed
+            logger.info("Checking for existing agents in Supabase...")
+            agents_data = sb.table('agents').select('*').execute()
+            if not agents_data.data:
+                logger.info("No agents found. Creating sample agents...")
+                # Create sample agents in Supabase
+                sample_agents = [
+                    {
+                        "name": "Recruiter Agent",
+                        "type": "recruiter",
+                        "description": "AI agent for candidate sourcing and evaluation",
+                        "status": "active",
+                        "parameters": {
+                            "matching_threshold": 0.7,
+                            "max_candidates": 10
+                        }
+                    },
+                    {
+                        "name": "Application Processor",
+                        "type": "processor",
+                        "description": "AI agent for processing job applications",
+                        "status": "active",
+                        "parameters": {
+                            "auto_reject_threshold": 0.3,
+                            "auto_advance_threshold": 0.8
+                        }
+                    },
+                    {
+                        "name": "Job Matcher",
+                        "type": "matcher",
+                        "description": "AI agent for matching candidates to jobs",
+                        "status": "active",
+                        "parameters": {
+                            "similarity_algorithm": "cosine",
+                            "minimum_score": 0.6
+                        }
+                    }
+                ]
+                
+                for agent in sample_agents:
+                    sb.table('agents').insert(agent).execute()
+                
+                logger.info(f"Created {len(sample_agents)} sample agents")
+            else:
+                logger.info(f"Found {len(agents_data.data)} existing agents in Supabase")
+            
+        logger.info("Supabase initialization complete.")
     except Exception as e:
-        logger.error(f"Error initializing database: {str(e)}")
-        logger.warning("Continuing startup despite database error.")
+        logger.error(f"Error initializing Supabase: {str(e)}")
+        logger.warning("Continuing startup despite Supabase error.")
     
     # Initialize Agents SDK
     try:

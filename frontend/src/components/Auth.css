@@ -1,0 +1,113 @@
+.auth-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.auth-form {
+  width: 100%;
+  max-width: 400px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+  text-align: center;
+}
+
+.auth-form h1 {
+  margin-bottom: 0.5rem;
+  color: #4a5568;
+  font-size: 1.75rem;
+}
+
+.auth-form p {
+  margin-bottom: 2rem;
+  color: #718096;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  color: #4a5568;
+  font-weight: 500;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus {
+  border-color: #6B46C1;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(107, 70, 193, 0.1);
+}
+
+.login-button {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #6B46C1;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.login-button:hover {
+  background-color: #553c9a;
+}
+
+.login-button:disabled {
+  background-color: #a0aec0;
+  cursor: not-allowed;
+}
+
+.auth-footer {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+  font-size: 0.875rem;
+  color: #718096;
+}
+
+.error-message {
+  color: #c53030;
+  background-color: #fff5f5;
+  border: 1px solid #fed7d7;
+  border-radius: 4px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.loading-indicator {
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(107, 70, 193, 0.2);
+  border-radius: 50%;
+  border-top-color: #6B46C1;
+  animation: spin 1s ease-in-out infinite;
+  margin: 1rem auto;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+} 

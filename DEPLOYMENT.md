@@ -16,6 +16,28 @@ This guide explains how to deploy the Purple Ladder AI Platform using the simpli
 - Python 3.9+
 - Node.js 18+
 - Railway CLI (for Railway deployments)
+- Supabase Project (for authentication and database)
+
+## Supabase Setup
+
+1. Create a Supabase project at [supabase.com](https://supabase.com)
+
+2. Get your project URL and API keys from the Supabase dashboard:
+   - Go to Project Settings > API
+   - Copy the "URL", "anon key" (for frontend) and "service_role key" (for backend)
+
+3. Add these values to your `.env` file:
+   ```
+   # Supabase Configuration for backend
+   SUPABASE_URL=your_supabase_project_url
+   SUPABASE_KEY=your_supabase_service_role_key
+
+   # Supabase Configuration for frontend
+   REACT_APP_SUPABASE_URL=your_supabase_project_url
+   REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
+
+4. For production, add these environment variables in your Railway dashboard
 
 ## Deployment Options
 
@@ -25,6 +47,7 @@ For local development with hot reloading:
 
 ```bash
 ./deploy.sh development
+cd frontend && ./start-dev.sh
 ```
 
 This will:
@@ -69,8 +92,11 @@ Common environment variables:
 | `OPENAI_API_KEY` | OpenAI API key | - |
 | `APP_ENV` | Application environment | `development` |
 | `PRODUCTION` | Production mode flag | `false` |
-| `DATABASE_URL` | Database connection string | `sqlite:///./app.db` |
 | `REDIS_URL` | Redis connection string | `redis://redis:6379/0` |
+| `SUPABASE_URL` | Supabase project URL | - |
+| `SUPABASE_KEY` | Supabase service role key | - |
+| `REACT_APP_SUPABASE_URL` | Supabase URL for frontend | - |
+| `REACT_APP_SUPABASE_ANON_KEY` | Supabase anon key for frontend | - |
 
 ## Static Files and Frontend Serving
 
@@ -100,6 +126,8 @@ The application consists of:
 
 3. **Redis** - Message broker for Celery
 
+4. **Supabase** - Authentication and database services (external)
+
 ## Monitoring
 
 - For local deployments: Logs are available in the console
@@ -126,6 +154,11 @@ The application consists of:
    - Check Railway logs with `railway logs`
    - Make sure environment variables are set in Railway dashboard
 
+5. **Authentication issues with Supabase**
+   - Check that your Supabase URL and API keys are correctly set in environment variables
+   - Verify that you're using the anon key for frontend and service role key for backend
+   - Check Supabase logs in the Supabase dashboard
+
 ### Health Check Issues on Railway
 
 If the health check fails on Railway with "service unavailable" errors:
@@ -141,6 +174,7 @@ If the health check fails on Railway with "service unavailable" errors:
 3. **Database Connection Issues**
    - If your app relies on a database, ensure the connection string is correct
    - Try making the database initialization fault-tolerant
+   - For Supabase, check that your URL and API keys are correct
 
 4. **Memory Constraints**
    - Reduce the number of Gunicorn workers to 2 to avoid memory issues

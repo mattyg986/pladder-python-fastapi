@@ -1,129 +1,56 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import {
-  AppBar,
-  Box,
-  Drawer,
-  IconButton,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Toolbar,
-  Typography,
-  Divider,
-} from '@mui/material';
-import {
-  Menu as MenuIcon,
-  Dashboard as DashboardIcon,
-  SmartToy as AgentsIcon,
-  Task as TasksIcon,
-} from '@mui/icons-material';
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import './Layout.css';
 
-const drawerWidth = 240;
-
+/**
+ * Main layout component for authenticated pages only
+ * This component should only be used for protected routes
+ */
 const Layout = ({ children }) => {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const location = useLocation();
-
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  
+  // Handle logout click
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/login');
   };
 
-  const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
-    { text: 'Agents', icon: <AgentsIcon />, path: '/agents' },
-    { text: 'Tasks', icon: <TasksIcon />, path: '/tasks' },
-  ];
-
-  const drawer = (
-    <div>
-      <Toolbar>
-        <Typography variant="h6" noWrap component="div">
-          Purple Ladder
-        </Typography>
-      </Toolbar>
-      <Divider />
-      <List>
-        {menuItems.map((item) => (
-          <ListItem key={item.text} disablePadding>
-            <ListItemButton
-              component={Link}
-              to={item.path}
-              selected={location.pathname === item.path}
-            >
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.text} />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
-    </div>
-  );
-
   return (
-    <Box sx={{ display: 'flex' }}>
-      <AppBar
-        position="fixed"
-        sx={{
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          ml: { sm: `${drawerWidth}px` },
-        }}
-      >
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: 'none' } }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" noWrap component="div">
-            AI Agents Platform
-          </Typography>
-        </Toolbar>
-      </AppBar>
-      <Box
-        component="nav"
-        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-        aria-label="mailbox folders"
-      >
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={handleDrawerToggle}
-          ModalProps={{
-            keepMounted: true, // Better open performance on mobile.
-          }}
-          sx={{
-            display: { xs: 'block', sm: 'none' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-          }}
-        >
-          {drawer}
-        </Drawer>
-        <Drawer
-          variant="permanent"
-          sx={{
-            display: { xs: 'none', sm: 'block' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-          }}
-          open
-        >
-          {drawer}
-        </Drawer>
-      </Box>
-      <Box
-        component="main"
-        sx={{ flexGrow: 1, p: 3, width: { sm: `calc(100% - ${drawerWidth}px)` } }}
-      >
-        <Toolbar />
+    <div className="app-container">
+      <header className="app-header">
+        <div className="logo">
+          <h1>Purple Ladder AI</h1>
+        </div>
+        <nav className="main-nav">
+          <ul>
+            <li>
+              <Link to="/">Home</Link>
+            </li>
+            <li>
+              <Link to="/dashboard">Dashboard</Link>
+            </li>
+          </ul>
+        </nav>
+        <div className="user-section">
+          {user && (
+            <>
+              <span className="user-email">{user.email}</span>
+              <button className="logout-button" onClick={handleLogout}>
+                Sign Out
+              </button>
+            </>
+          )}
+        </div>
+      </header>
+      <main className="content-area">
         {children}
-      </Box>
-    </Box>
+      </main>
+      <footer className="app-footer">
+        <p>&copy; {new Date().getFullYear()} Purple Ladder AI</p>
+      </footer>
+    </div>
   );
 };
 

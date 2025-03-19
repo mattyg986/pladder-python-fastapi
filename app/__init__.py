@@ -1,8 +1,7 @@
 # Import necessary components for the app to work
-from app.core.database import Base, engine
-from app.models.agent import Agent, AgentTaskModel
+from app.core.supabase_client import supabase, get_supabase
 
 # Import API
 from app.api.v1 import api
 
-__all__ = ["Base", "engine", "Agent", "AgentTaskModel", "api"]
+__all__ = ["supabase", "get_supabase", "api"]
